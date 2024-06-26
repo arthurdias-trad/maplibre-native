@@ -199,6 +199,10 @@ public:
     virtual void mergeOfflineRegions(const std::string& sideDatabasePath,
                                      std::function<void(expected<OfflineRegions, std::exception_ptr>)>);
 
+    virtual void createTempViewForDecryption(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path);
+
+    virtual void dropTempView();
+
     /*
      * Remove an offline region from the database and perform any resources evictions
      * necessary as a result.

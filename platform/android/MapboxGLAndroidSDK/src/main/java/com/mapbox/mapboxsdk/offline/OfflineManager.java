@@ -265,6 +265,35 @@ public class OfflineManager {
     }).start();
   }
 
+  public void createDbTempView(String uniqueKey, String partnerKey, String path) {
+    final File src = new File(path);
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    createTempViewOnDatabase(uniqueKey, partnerKey, path);
+                }
+            });
+        }
+    }).start();
+  }
+
+  public void dropDbTempView() {
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    dropTempViewFromDatabase();
+                }
+            });
+        }
+    }).start();
+  }
+
   /**
    * Delete existing database and re-initialize.
    * <p>
@@ -581,6 +610,16 @@ public class OfflineManager {
     });
   }
 
+  private void createTempViewOnDatabase(final String uniqueKey, final String partnerKey, final String path) {
+    fileSource.activate();
+    createTempViewForDecryption(uniqueKey, partnerKey, path);
+}
+
+  private void dropTempViewFromDatabase() {
+      fileSource.activate();
+      dropTempView();
+  }
+
   /**
    * Creates an offline region in the database by downloading the resources needed to use
    * the given region offline.
@@ -702,6 +741,12 @@ public class OfflineManager {
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
+
+  @Keep
+  private native void createTempViewForDecryption(String uniqueKey, String partnerKey, String path);
+
+  @Keep
+  private native void dropTempView();
 
   @Keep
   private native void nativeResetDatabase(@Nullable FileSourceCallback callback);

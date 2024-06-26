@@ -83,6 +83,13 @@ public:
                              const jni::String&,
                              const jni::Object<MergeOfflineRegionsCallback>&);
 
+    void createTempViewForDecryption(jni::JNIEnv&,
+                                     const jni::String& uniqueKey,
+                                     const jni::String& partnerKey,
+                                     const jni::String& path_);
+
+    void dropTempView(jni::JNIEnv&);
+
     void putResourceWithUrl(jni::JNIEnv&,
                             const jni::String& url,
                             const jni::Array<jni::jbyte>& data,

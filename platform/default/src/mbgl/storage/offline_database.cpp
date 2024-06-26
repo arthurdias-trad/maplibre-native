@@ -487,6 +487,59 @@ bool OfflineDatabase::putResource(const Resource& resource,
     return true;
 }
 
+void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) {    
+    changePath(path_);
+
+    assert(db);
+
+    encrypted = true;
+
+        if (!extensionLoaded) {
+        mapbox::sqlite::Query enableExtensionQuery{getStatement("PRAGMA enable_load_extension = 1")};
+        enableExtensionQuery.run();
+
+        mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
+        loadEncryptorQuery.run();
+
+        extensionLoaded = true;
+    }
+
+    mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
+    setKeyQuery.bind(1, partnerKey); 
+    setKeyQuery.run();
+
+    // clang-format off
+    mapbox::sqlite::Query createViewQuery { getStatement(
+        "CREATE TEMP VIEW view_region_drm "
+        "AS SELECT decrypt (decrypt (key, hexdecode (?1), iv)) key, iv, region_id, signature, "
+        "digest (decrypt decrypt (key, hexdecode (?2), iv))) chksum "
+        "FROM drm "
+        "JOIN region_drm ON drm_rowid = drm.rowid "
+        "WHERE signature = chksum;"
+    )};
+    // clang-format on
+
+    createViewQuery.bind(1, uniqueKey);
+    createViewQuery.bind(2, uniqueKey);
+    createViewQuery.run();
+}
+
+void OfflineDatabase::dropTempView() {
+    assert(db);
+
+    // clang-format off
+    mapbox::sqlite::Query dropViewQuery { getStatement(
+        "DROP VIEW IF EXISTS view_region_drm;"
+    )};
+    // clang-format on
+
+    dropViewQuery.run();
+
+    encrypted = false;
+    extensionLoaded = false;
+}
+
+
 optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource::TileData& tile) {
     // Update accessed timestamp used for LRU eviction.
     if (!readOnly) {
@@ -519,40 +572,61 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
         }
     }
 
+    std::unique_ptr<mapbox::sqlite::Query> query;
+
     // clang-format off
-    mapbox::sqlite::Query query{ getStatement(
-        //        0      1           2,            3,      4,      5
-        "SELECT etag, expires, must_revalidate, modified, data, compressed "
-        "FROM tiles "
-        "WHERE url_template = ?1 "
-        "  AND pixel_ratio  = ?2 "
-        "  AND x            = ?3 "
-        "  AND y            = ?4 "
-        "  AND z            = ?5 ") };
+    if (encrypted) {
+        // Ensure mbtileencryptor is loaded
+        mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
+        loadEncryptorQuery.run();
+
+        query = std::make_unique<mapbox::sqlite::Query>(getStatement(
+            "SELECT etag, expires, must_revalidate, modified, "
+            "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data, "
+            "compressed "
+            "FROM tiles "
+            "JOIN region_tiles ON tiles.id = region_tiles.tile_id "
+            "JOIN view_region_drm USING(region_id) "
+            "WHERE url_template = ?1 "
+            "  AND pixel_ratio  = ?2 "
+            "  AND x            = ?3 "
+            "  AND y            = ?4 "
+            "  AND z            = ?5 "));
+    } else {
+        // Use the original query
+        query = std::make_unique<mapbox::sqlite::Query>(getStatement(
+            "SELECT etag, expires, must_revalidate, modified, data, compressed "
+            "FROM tiles "
+            "WHERE url_template = ?1 "
+            "  AND pixel_ratio  = ?2 "
+            "  AND x            = ?3 "
+            "  AND y            = ?4 "
+            "  AND z            = ?5 "));
+    }
     // clang-format on
 
-    query.bind(1, tile.urlTemplate);
-    query.bind(2, tile.pixelRatio);
-    query.bind(3, tile.x);
-    query.bind(4, tile.y);
-    query.bind(5, tile.z);
+    query->bind(1, tile.urlTemplate);
+    query->bind(2, tile.pixelRatio);
+    query->bind(3, tile.x);
+    query->bind(4, tile.y);
+    query->bind(5, tile.z);
 
-    if (!query.run()) {
+    if (!query->run()) {
         return nullopt;
     }
 
     Response response;
     uint64_t size = 0;
 
-    response.etag            = query.get<optional<std::string>>(0);
-    response.expires         = query.get<optional<Timestamp>>(1);
-    response.mustRevalidate  = query.get<bool>(2);
-    response.modified        = query.get<optional<Timestamp>>(3);
+    response.etag            = query->get<optional<std::string>>(0);
+    response.expires         = query->get<optional<Timestamp>>(1);
+    response.mustRevalidate  = query->get<bool>(2);
+    response.modified        = query->get<optional<Timestamp>>(3);
 
-    optional<std::string> data = query.get<optional<std::string>>(4);
+    optional<std::string> data = query->get<optional<std::string>>(4);
     if (!data) {
         response.noContent = true;
-    } else if (query.get<bool>(5)) {
+    } else if (query->get<bool>(5)) {
         response.data = std::make_shared<std::string>(util::decompress(*data));
         size = data->length();
     } else {

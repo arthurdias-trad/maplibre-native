@@ -44,6 +44,10 @@ public:
     void changePath(const std::string&);
     std::exception_ptr resetDatabase();
 
+    void createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_);
+
+    void dropTempView();
+
     optional<Response> get(const Resource&);
 
     // Return value is (inserted, stored size)
@@ -154,6 +158,9 @@ private:
     bool evict(uint64_t neededFreeSize, DatabaseSizeChangeStats& stats);
 
     TileServerOptions tileServerOptions;
+
+    bool encrypted = false;
+    bool extensionLoaded = false;
 
     class DatabaseSizeChangeStats {
     public:

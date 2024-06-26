@@ -94,6 +94,12 @@ public:
         callback(db->updateMetadata(regionID, metadata));
     }
 
+    void createTempViewForDecryption(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path) {
+        db->createTempView(uniqueKey, partnerKey, path);
+    }
+
+    void dropTempView() { db->dropTempView(); }
+
     void getRegionStatus(int64_t regionID,
                          const std::function<void(expected<OfflineRegionStatus, std::exception_ptr>)>& callback) {
         if (auto download = getDownload(regionID)) {

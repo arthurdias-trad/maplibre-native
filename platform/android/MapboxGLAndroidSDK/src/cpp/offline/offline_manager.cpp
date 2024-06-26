@@ -127,6 +127,17 @@ void OfflineManager::mergeOfflineRegions(jni::JNIEnv& env_, const jni::Object<Fi
     });
 }
 
+void OfflineManager::createTempViewForDecryption(jni::JNIEnv& env_, const jni::String& uniqueKey_, const jni::String& partnerKey_, const jni::String& path_) {
+    auto uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
+    auto partnerKey = jni::Make<std::string>(env_, partnerKey_);
+    auto path = jni::Make<std::string>(env_, path_);
+    fileSource->createTempViewForDecryption(uniqueKey, partnerKey, path);
+}
+
+void OfflineManager::dropTempView(jni::JNIEnv& env_) {
+    fileSource->dropTempView();
+}
+
 void OfflineManager::resetDatabase(jni::JNIEnv& env_, const jni::Object<FileSourceCallback>& callback_) {
     auto globalCallback = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, callback_);
 
@@ -227,6 +238,8 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
         METHOD(&OfflineManager::setMaximumAmbientCacheSize, "nativeSetMaximumAmbientCacheSize"),
         METHOD(&OfflineManager::runPackDatabaseAutomatically, "runPackDatabaseAutomatically"),
         METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"));
+        METHOD(&OfflineManager::createTempViewForDecryption, "createTempViewForDecryption");
+        METHOD(&OfflineManager::dropTempView, "dropTempView");
 }
 
 // OfflineManager::ListOfflineRegionsCallback //
