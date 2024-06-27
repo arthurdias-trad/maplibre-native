@@ -282,6 +282,16 @@ void DatabaseFileSource::mergeOfflineRegions(
     impl->actor().invoke(&DatabaseFileSourceThread::mergeOfflineRegions, sideDatabasePath, std::move(callback));
 }
 
+void DatabaseFileSource::createTempViewForDecryption(const std::string& uniqueKey,
+                                                     const std::string& partnerKey,
+                                                     const std::string& path) {
+    impl->actor().invoke(&DatabaseFileSourceThread::createTempViewForDecryption, uniqueKey, partnerKey, path);
+}
+
+void DatabaseFileSource::dropTempView() {
+    impl->actor().invoke(&DatabaseFileSourceThread::dropTempView);
+}
+
 void DatabaseFileSource::updateOfflineMetadata(
     const int64_t regionID,
     const OfflineRegionMetadata& metadata,
