@@ -265,7 +265,7 @@ public class OfflineManager {
     }).start();
   }
 
-  public void createDbTempView(String uniqueKey, String partnerKey, String path) {
+  public void createDbTempView(final String uniqueKey, final String partnerKey, final String path) {
     final File src = new File(path);
     new Thread(new Runnable() {
         @Override
