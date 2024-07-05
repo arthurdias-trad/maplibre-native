@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -273,6 +274,7 @@ public class OfflineManager {
   }
 
   public void testUniqueKeyOnDB(final String uniqueKey, final String path, final String partnerKey, final TestUniqueKeyCallback callback) {
+    Log.d(TAG, "testUniqueKeyOnDB: " + uniqueKey + " path: " + path + " partnerKey: " + partnerKey);
     final File src = new File(path);
     new Thread(new Runnable() {
         @Override

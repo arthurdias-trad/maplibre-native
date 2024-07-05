@@ -488,6 +488,7 @@ bool OfflineDatabase::putResource(const Resource& resource,
 }
 
 bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
+    Log::Debug(Event::Database, "Testing unique key.");
     assert(db);
 
     std::string originalPath = this->path;
@@ -496,16 +497,20 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     encrypted = true;
 
     if (!extensionLoaded) {
+        Log::Debug(Event::Database, "Loading extension.");
         mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
         loadEncryptorQuery.run();
 
         extensionLoaded = true;
     }
 
+
+    Log::Debug(Event::Database, "Setting key.");
     mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
     setKeyQuery.bind(1, partnerKey);
     setKeyQuery.run();
 
+    Log::Debug(Event::Database, "Creating test key query.");
     // clang-format off
     mapbox::sqlite::Query testKeyQuery{ getStatement(
         "SELECT decrypt (decrypt (key, hexdecode (?1), iv)) key, iv, region_id, signature, "
@@ -521,6 +526,7 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     
     bool result = false;
 
+    Log::Debug(Event::Database, "Running test key query.");
     while (testKeyQuery.run()) {
         std::string signature = testKeyQuery.get<std::string>(3);
         std::string checksum = testKeyQuery.get<std::string>(4);
@@ -533,6 +539,8 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
 
     dropTempView();
 
+    Log::Debug(Event::Database, "Resetting path.");
+
     changePath(originalPath);
     encrypted = false;
     extensionLoaded = false;
@@ -540,7 +548,8 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     return result;
 }
 
-void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) {    
+void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
+    Log::Warning(Event::Database, "Creating temp view.");   
     changePath(path_);
 
     assert(db);
@@ -575,6 +584,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 }
 
 void OfflineDatabase::dropTempView() {
+    Log::Warning(Event::Database, "Dropping temp view.");
     assert(db);
 
     // clang-format off

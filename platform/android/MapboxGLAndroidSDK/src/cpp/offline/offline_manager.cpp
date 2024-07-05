@@ -3,6 +3,7 @@
 #include <mbgl/storage/file_source_manager.hpp>
 #include <mbgl/storage/resource.hpp>
 #include <mbgl/util/string.hpp>
+#include <mbgl/util/logging.hpp>
 
 #include "attach_env.hpp"
 
@@ -132,6 +133,7 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
                                     const jni::String& path_, 
                                     const jni::String& partnerKey_, 
                                     const jni::Object<TestUniqueKeyCallback>& callback_) {
+    Log::Debug(mbgl::Event::General, "OfflineManager::testUniqueKey called");
     auto globalCallback = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, callback_);
     std::string uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
     std::string path = jni::Make<std::string>(env_, path_);
@@ -144,8 +146,10 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
 
         if (result) {
             jni::jboolean jResult = static_cast<jni::jboolean>(result);
+            Log::Debug(mbgl::Event::General, "OfflineManager::testUniqueKey: success");
             TestUniqueKeyCallback::onSuccess(*env, *callback, jResult);
         } else {
+            Log::Debug(mbgl::Event::General, "OfflineManager::testUniqueKey: failed");
             auto errorMsg = jni::Make<jni::String>(*env, "Test unique key failed.");
             TestUniqueKeyCallback::onError(*env, *callback, errorMsg);
         }

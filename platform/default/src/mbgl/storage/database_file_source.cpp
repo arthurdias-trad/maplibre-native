@@ -95,6 +95,7 @@ public:
     }
 
     void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
+        Log::Warning(Event::Database, "DatabaseFileSourceThread::testUniqueKeyForDecryption called");
         bool result = db->testUniqueKey(uniqueKey, path, partnerKey);
         callback(result);
     }
@@ -288,6 +289,7 @@ void DatabaseFileSource::mergeOfflineRegions(
 }
 
 void DatabaseFileSource::testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
+    Log::Warning(Event::Database, "DatabaseFileSource::testUniqueKeyForDecryption");
     impl->actor().invoke(&DatabaseFileSourceThread::testUniqueKeyForDecryption, uniqueKey, path, partnerKey, std::move(callback));
 }
 
