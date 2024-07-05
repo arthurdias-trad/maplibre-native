@@ -143,7 +143,7 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
         android::UniqueEnv env = android::AttachEnv();
 
         if (result) {
-            auto jResult = jni::Make<jni::jboolean>(*env, result);
+            jni::jboolean jResult = static_cast<jni::jboolean>(result);
             TestUniqueKeyCallback::onSuccess(*env, *callback, jResult);
         } else {
             auto errorMsg = jni::Make<jni::String>(*env, "Test unique key failed.");
