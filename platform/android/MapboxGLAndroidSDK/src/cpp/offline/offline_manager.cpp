@@ -143,7 +143,8 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
         android::UniqueEnv env = android::AttachEnv();
 
         if (result) {
-            TestUniqueKeyCallback::onSuccess(*env, *callback, result);
+            auto jResult = jni::Make<jni::jboolean>(*env, result);
+            TestUniqueKeyCallback::onSuccess(*env, *callback, jResult);
         } else {
             auto errorMsg = jni::Make<jni::String>(*env, "Test unique key failed.");
             TestUniqueKeyCallback::onError(*env, *callback, errorMsg);
@@ -281,9 +282,9 @@ void OfflineManager::TestUniqueKeyCallback::onError(jni::JNIEnv& env,
 }
 
 void OfflineManager::TestUniqueKeyCallback::onSuccess(jni::JNIEnv& env,
-                                                       const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback, bool result) {
+                                                       const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback, const jni::jboolean result) {
     static auto& javaClass = jni::Class<OfflineManager::TestUniqueKeyCallback>::Singleton(env);
-    static auto method = javaClass.GetMethod<void (bool)>(env, "onSuccess");
+    static auto method = javaClass.GetMethod<void (jni::jboolean)>(env, "onSuccess");
 
     callback.Call(env, method, result);
 }

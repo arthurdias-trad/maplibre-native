@@ -64,7 +64,7 @@ public:
     struct TestUniqueKeyCallback {
         static constexpr auto Name() { return "com/mapbox/mapboxsdk/offline/OfflineManager$TestUniqueKeyCallback";}
 
-        static void onSuccess(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, bool result);
+        static void onSuccess(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, const jni::jboolean);
 
         static void onError(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, const jni::String&);
     };
