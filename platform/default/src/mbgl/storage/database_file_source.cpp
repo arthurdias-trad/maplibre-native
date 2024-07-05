@@ -94,6 +94,11 @@ public:
         callback(db->updateMetadata(regionID, metadata));
     }
 
+    void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
+        bool result = db->testUniqueKey(uniqueKey, path, partnerKey);
+        callback(result);
+    }
+
     void createTempViewForDecryption(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path) {
         db->createTempView(uniqueKey, partnerKey, path);
     }
@@ -280,6 +285,10 @@ void DatabaseFileSource::createOfflineRegion(
 void DatabaseFileSource::mergeOfflineRegions(
     const std::string& sideDatabasePath, std::function<void(expected<OfflineRegions, std::exception_ptr>)> callback) {
     impl->actor().invoke(&DatabaseFileSourceThread::mergeOfflineRegions, sideDatabasePath, std::move(callback));
+}
+
+void DatabaseFileSource::testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
+    impl->actor().invoke(&DatabaseFileSourceThread::testUniqueKeyForDecryption, uniqueKey, path, partnerKey, std::move(callback));
 }
 
 void DatabaseFileSource::createTempViewForDecryption(const std::string& uniqueKey,

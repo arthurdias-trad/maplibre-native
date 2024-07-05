@@ -130,6 +130,15 @@ mapbox::util::variant<Database, Exception> Database::tryOpen(const std::string &
         sqlite3_close(db);
         return Exception { error, message };
     }
+
+    const int enableLoadExtension = sqlite3_enable_load_extension(db, 1);
+
+    if (enableLoadExtension != SQLITE_OK) {
+        const auto message = sqlite3_errmsg(db);
+        sqlite3_close(db);
+        return Exception { enableLoadExtension, message };
+    }
+
     return Database(std::make_unique<DatabaseImpl>(db));
 }
 

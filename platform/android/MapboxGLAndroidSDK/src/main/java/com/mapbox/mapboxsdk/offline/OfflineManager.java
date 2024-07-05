@@ -62,6 +62,13 @@ public class OfflineManager {
   // The application context
   private Context context;
 
+  @Keep
+  public interface TestUniqueKeyCallback {
+    void onSuccess(boolean isValidKey);
+
+    void onError(String error);
+  }
+
   /**
    * This callback receives an asynchronous response containing a list of all
    * OfflineRegion in the database or an error message otherwise.
@@ -262,6 +269,16 @@ public class OfflineManager {
           });
         }
       }
+    }).start();
+  }
+
+  public void testUniqueKeyOnDB(final String uniqueKey, final String path, final String partnerKey, final TestUniqueKeyCallback callback) {
+    final File src = new File(path);
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            testUniqueKeyForDecryption(uniqueKey, src.getAbsolutePath(), partnerKey, callback);
+        }
     }).start();
   }
 
@@ -610,6 +627,33 @@ public class OfflineManager {
     });
   }
 
+  private void testUniqueKeyForDecryption(final String uniqueKey, final String path, final String partnerKey, final TestUniqueKeyCallback callback) {
+    fileSource.activate();
+    testUniqueKey(uniqueKey, path, partnerKey, new TestUniqueKeyCallback() {
+      @Override
+      public void onSuccess(final boolean isValidKey) {
+        handler.post(new Runnable() {
+          @Override
+          public void run() {
+            fileSource.deactivate();
+            callback.onSuccess(isValidKey);
+          }
+        });
+      }
+
+      @Override
+      public void onError(final String error) {
+        handler.post(new Runnable() {
+          @Override
+          public void run() {
+            fileSource.deactivate();
+            callback.onError(error);
+          }
+        });
+      }
+    });
+  }
+
   private void createTempViewOnDatabase(final String uniqueKey, final String partnerKey, final String path) {
     fileSource.activate();
     createTempViewForDecryption(uniqueKey, partnerKey, path);
@@ -741,6 +785,9 @@ public class OfflineManager {
 
   @Keep
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
+
+  @Keep
+  private native void testUniqueKey(String uniqueKey, String path, String partnerKey, TestUniqueKeyCallback callback);
 
   @Keep
   private native void createTempViewForDecryption(String uniqueKey, String partnerKey, String path);

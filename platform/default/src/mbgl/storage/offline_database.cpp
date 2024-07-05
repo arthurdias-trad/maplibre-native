@@ -487,6 +487,59 @@ bool OfflineDatabase::putResource(const Resource& resource,
     return true;
 }
 
+bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
+    assert(db);
+
+    std::string originalPath = this->path;
+    changePath(path_);
+
+    encrypted = true;
+
+    if (!extensionLoaded) {
+        mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
+        loadEncryptorQuery.run();
+
+        extensionLoaded = true;
+    }
+
+    mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
+    setKeyQuery.bind(1, partnerKey);
+    setKeyQuery.run();
+
+    // clang-format off
+    mapbox::sqlite::Query testKeyQuery{ getStatement(
+        "SELECT decrypt (decrypt (key, hexdecode (?1), iv)) key, iv, region_id, signature, "
+        "digest (decrypt decrypt (key, hexdecode (?2), iv))) chksum "
+        "FROM drm "
+        "JOIN region_drm ON drm_rowid = drm.rowid "
+        "WHERE signature = chksum;"
+    )};
+    // clang-format on
+
+    testKeyQuery.bind(1, uniqueKey);
+    testKeyQuery.bind(2, uniqueKey);
+    
+    bool result = false;
+
+    while (testKeyQuery.run()) {
+        std::string signature = testKeyQuery.get<std::string>(3);
+        std::string checksum = testKeyQuery.get<std::string>(4);
+
+        if (!signature.empty() && !checksum.empty() && signature == checksum) {
+            result = true;
+            break;
+        }
+    }
+
+    dropTempView();
+
+    changePath(originalPath);
+    encrypted = false;
+    extensionLoaded = false;
+
+    return result;
+}
+
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) {    
     changePath(path_);
 
@@ -495,9 +548,6 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     encrypted = true;
 
         if (!extensionLoaded) {
-        mapbox::sqlite::Query enableExtensionQuery{getStatement("PRAGMA enable_load_extension = 1")};
-        enableExtensionQuery.run();
-
         mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
         loadEncryptorQuery.run();
 

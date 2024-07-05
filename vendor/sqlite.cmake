@@ -20,7 +20,7 @@ endif()
 # So we don't need to link with -ldl
 target_compile_definitions(
     mbgl-vendor-sqlite
-    PRIVATE SQLITE_OMIT_LOAD_EXTENSION SQLITE_THREADSAFE
+    PRIVATE SQLITE_THREADSAFE
 )
 
 target_include_directories(

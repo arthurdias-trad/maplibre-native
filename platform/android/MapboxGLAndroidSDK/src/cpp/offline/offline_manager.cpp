@@ -127,6 +127,30 @@ void OfflineManager::mergeOfflineRegions(jni::JNIEnv& env_, const jni::Object<Fi
     });
 }
 
+void OfflineManager::testUniqueKey(jni::JNIEnv& env_, 
+                                    const jni::String& uniqueKey_, 
+                                    const jni::String& path_, 
+                                    const jni::String& partnerKey_, 
+                                    const jni::Object<TestUniqueKeyCallback>& callback_) {
+    auto globalCallback = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, callback_);
+    std::string uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
+    std::string path = jni::Make<std::string>(env_, path_);
+    std::string partnerKey = jni::Make<std::string>(env_, partnerKey_);
+
+    fileSource->testUniqueKeyForDecryption(uniqueKey, path, partnerKey, [
+        callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback))
+    ](bool result) mutable {
+        android::UniqueEnv env = android::AttachEnv();
+
+        if (result) {
+            TestUniqueKeyCallback::onSuccess(*env, *callback, result);
+        } else {
+            auto errorMsg = jni::Make<jni::String>(*env, "Test unique key failed.");
+            TestUniqueKeyCallback::onError(*env, *callback, errorMsg);
+        }
+    });
+}
+
 void OfflineManager::createTempViewForDecryption(jni::JNIEnv& env_, const jni::String& uniqueKey_, const jni::String& partnerKey_, const jni::String& path_) {
     auto uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
     auto partnerKey = jni::Make<std::string>(env_, partnerKey_);
@@ -215,6 +239,7 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
     jni::Class<CreateOfflineRegionCallback>::Singleton(env);
     jni::Class<MergeOfflineRegionsCallback>::Singleton(env);
     jni::Class<FileSourceCallback>::Singleton(env);
+    jni::Class<TestUniqueKeyCallback>::Singleton(env);
 
     static auto& javaClass = jni::Class<OfflineManager>::Singleton(env);
 
@@ -237,9 +262,30 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
         METHOD(&OfflineManager::clearAmbientCache, "nativeClearAmbientCache"),
         METHOD(&OfflineManager::setMaximumAmbientCacheSize, "nativeSetMaximumAmbientCacheSize"),
         METHOD(&OfflineManager::runPackDatabaseAutomatically, "runPackDatabaseAutomatically"),
-        METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"));
-        METHOD(&OfflineManager::createTempViewForDecryption, "createTempViewForDecryption");
-        METHOD(&OfflineManager::dropTempView, "dropTempView");
+        METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"),
+        METHOD(&OfflineManager::testUniqueKey, "testUniqueKey"),
+        METHOD(&OfflineManager::createTempViewForDecryption, "createTempViewForDecryption"),
+        METHOD(&OfflineManager::dropTempView, "dropTempView")
+        );
+}
+
+// OfflineManager::TestUniqueKeyCallback //
+
+void OfflineManager::TestUniqueKeyCallback::onError(jni::JNIEnv& env,
+                                                     const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback,
+                                                     const jni::String& message) {
+    static auto& javaClass = jni::Class<OfflineManager::TestUniqueKeyCallback>::Singleton(env);
+    static auto method = javaClass.GetMethod<void (jni::String)>(env, "onError");
+
+    callback.Call(env, method, message);
+}
+
+void OfflineManager::TestUniqueKeyCallback::onSuccess(jni::JNIEnv& env,
+                                                       const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback, bool result) {
+    static auto& javaClass = jni::Class<OfflineManager::TestUniqueKeyCallback>::Singleton(env);
+    static auto method = javaClass.GetMethod<void (bool)>(env, "onSuccess");
+
+    callback.Call(env, method, result);
 }
 
 // OfflineManager::ListOfflineRegionsCallback //

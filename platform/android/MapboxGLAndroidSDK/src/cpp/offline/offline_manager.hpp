@@ -61,6 +61,14 @@ public:
         static void onError(jni::JNIEnv&, const jni::Object<OfflineManager::FileSourceCallback>&, const jni::String&);
     };
 
+    struct TestUniqueKeyCallback {
+        static constexpr auto Name() { return "com/mapbox/mapboxsdk/offline/OfflineManager$TestUniqueKeyCallback";}
+
+        static void onSuccess(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, bool result);
+
+        static void onError(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, const jni::String&);
+    };
+
     static constexpr auto Name() { return "com/mapbox/mapboxsdk/offline/OfflineManager"; };
 
     static void registerNative(jni::JNIEnv&);
@@ -82,6 +90,12 @@ public:
                              const jni::Object<FileSource>&,
                              const jni::String&,
                              const jni::Object<MergeOfflineRegionsCallback>&);
+
+    void testUniqueKey(jni::JNIEnv&,
+                                    const jni::String& uniqueKey,
+                                    const jni::String& path_,
+                                    const jni::String& partnerKey,
+                                    const jni::Object<TestUniqueKeyCallback>& callback_);
 
     void createTempViewForDecryption(jni::JNIEnv&,
                                      const jni::String& uniqueKey,
