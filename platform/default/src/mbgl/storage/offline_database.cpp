@@ -513,8 +513,8 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     Log::Debug(Event::Database, "Creating test key query.");
     // clang-format off
     mapbox::sqlite::Query testKeyQuery{ getStatement(
-        "SELECT decrypt (decrypt (key, hexdecode (?1), iv)) key, iv, region_id, signature, "
-        "digest (decrypt decrypt (key, hexdecode (?2), iv))) chksum "
+        "SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
+        "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
         "FROM drm "
         "JOIN region_drm ON drm_rowid = drm.rowid "
         "WHERE signature = chksum;"
@@ -536,8 +536,6 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
             break;
         }
     }
-
-    dropTempView();
 
     Log::Debug(Event::Database, "Resetting path.");
 
@@ -570,8 +568,8 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     // clang-format off
     mapbox::sqlite::Query createViewQuery { getStatement(
         "CREATE TEMP VIEW view_region_drm "
-        "AS SELECT decrypt (decrypt (key, hexdecode (?1), iv)) key, iv, region_id, signature, "
-        "digest (decrypt decrypt (key, hexdecode (?2), iv))) chksum "
+        "AS SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
+        "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
         "FROM drm "
         "JOIN region_drm ON drm_rowid = drm.rowid "
         "WHERE signature = chksum;"
@@ -637,8 +635,10 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
     // clang-format off
     if (encrypted) {
         // Ensure mbtileencryptor is loaded
-        mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
-        loadEncryptorQuery.run();
+        if (!extensionLoaded) {
+            mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
+            loadEncryptorQuery.run();
+        }
 
         query = std::make_unique<mapbox::sqlite::Query>(getStatement(
             "SELECT etag, expires, must_revalidate, modified, "
