@@ -95,7 +95,7 @@ public:
     }
 
     void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
-        Log::Warning(Event::Database, "DatabaseFileSourceThread::testUniqueKeyForDecryption called");
+        Log::Warning(Event::Database, "DatabaseFileSourceThread::testUniqueKeyForDecryption called with these args: " + uniqueKey + ", " + path + ", " + partnerKey);
         bool result = db->testUniqueKey(uniqueKey, path, partnerKey);
         callback(result);
     }

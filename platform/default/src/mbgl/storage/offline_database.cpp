@@ -488,7 +488,7 @@ bool OfflineDatabase::putResource(const Resource& resource,
 }
 
 bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
-    Log::Debug(Event::Database, "Testing unique key.");
+    Log::Warning(Event::Database, "Testing unique key.");
     assert(db);
 
     std::string originalPath = this->path;
@@ -497,7 +497,7 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     encrypted = true;
 
     if (!extensionLoaded) {
-        Log::Debug(Event::Database, "Loading extension.");
+        Log::Warning(Event::Database, "Loading extension.");
         mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
         loadEncryptorQuery.run();
 
@@ -505,45 +505,59 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     }
 
 
-    Log::Debug(Event::Database, "Setting key.");
+    Log::Warning(Event::Database, "Setting key.");
     mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
     setKeyQuery.bind(1, partnerKey);
     setKeyQuery.run();
 
-    Log::Debug(Event::Database, "Creating test key query.");
-    // clang-format off
-    mapbox::sqlite::Query testKeyQuery{ getStatement(
-        "SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
-        "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
-        "FROM drm "
-        "JOIN region_drm ON drm_rowid = drm.rowid "
-        "WHERE signature = chksum;"
-    )};
-    // clang-format on
+    try {
+        Log::Warning(Event::Database, "Creating test key query.");
+        // clang-format off
+        mapbox::sqlite::Query testKeyQuery{ getStatement(
+            "SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
+            "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
+            "FROM drm "
+            "JOIN region_drm ON drm_rowid = drm.rowid "
+            "WHERE signature = chksum;"
+        )};
+        // clang-format on
 
-    testKeyQuery.bind(1, uniqueKey);
-    testKeyQuery.bind(2, uniqueKey);
-    
-    bool result = false;
+        testKeyQuery.bind(1, uniqueKey);
+        testKeyQuery.bind(2, uniqueKey);
+        
+        bool result = false;
 
-    Log::Debug(Event::Database, "Running test key query.");
-    while (testKeyQuery.run()) {
-        std::string signature = testKeyQuery.get<std::string>(3);
-        std::string checksum = testKeyQuery.get<std::string>(4);
+        Log::Warning(Event::Database, "Running test key query.");
+        while (testKeyQuery.run()) {
+            std::string signature = testKeyQuery.get<std::string>(3);
+            std::string checksum = testKeyQuery.get<std::string>(4);
 
-        if (!signature.empty() && !checksum.empty() && signature == checksum) {
-            result = true;
-            break;
+            if (!signature.empty() && !checksum.empty() && signature == checksum) {
+                result = true;
+                break;
+            }
         }
+
+        Log::Warning(Event::Database, "Resetting path.");
+
+        changePath(originalPath);
+        encrypted = false;
+        extensionLoaded = false;
+
+        return result;
+    } catch (const mapbox::sqlite::Exception& e) {
+        Log::Error(Event::Database, "SQLite error: " + std::string(e.what()));
+        changePath(originalPath);
+        encrypted = false;
+        extensionLoaded = false;
+        return false;
+    } catch (const std::exception& e) {
+        Log::Error(Event::Database, "Error: " + std::string(e.what()));
+        changePath(originalPath);
+        encrypted = false;
+        extensionLoaded = false;
+        return false;
     }
-
-    Log::Debug(Event::Database, "Resetting path.");
-
-    changePath(originalPath);
-    encrypted = false;
-    extensionLoaded = false;
-
-    return result;
 }
 
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
