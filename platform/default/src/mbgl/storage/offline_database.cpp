@@ -76,6 +76,7 @@ void OfflineDatabase::initialize() {
 }
 
 void OfflineDatabase::changePath(const std::string& path_) {
+    Log::Warning(Event::Database, "Changing the database path to: " + path_);
     Log::Info(Event::Database, "Changing the database path.");
     cleanup();
     path = path_;
@@ -487,9 +488,22 @@ bool OfflineDatabase::putResource(const Resource& resource,
     return true;
 }
 
+bool isValidHex(const std::string& str) {
+    for (char const &c : str) {
+        if (!std::isxdigit(c)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
-    Log::Warning(Event::Database, "Testing unique key.");
-    assert(db);
+    Log::Warning(Event::Database, "Testing unique key with unique key: " + uniqueKey + " and path: " + path_);
+
+    if (!isValidHex(uniqueKey)) {
+        Log::Error(Event::Database, "Invalid hex string: " + uniqueKey);
+        return false;
+    }
 
     std::string originalPath = this->path;
     changePath(path_);
@@ -513,17 +527,17 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
     try {
         Log::Warning(Event::Database, "Creating test key query.");
         // clang-format off
-        mapbox::sqlite::Query testKeyQuery{ getStatement(
-            "SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
-            "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
+        std::string queryString = 
+            "SELECT decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv)) key, iv, region_id, signature, "
+            "digest(decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv))) chksum "
             "FROM drm "
             "JOIN region_drm ON drm_rowid = drm.rowid "
-            "WHERE signature = chksum;"
+            "WHERE signature = chksum;";
+        Log::Warning(Event::Database, "Query string: " + queryString);
+        mapbox::sqlite::Query testKeyQuery{ getStatement(
+            queryString.c_str()
         )};
         // clang-format on
-
-        testKeyQuery.bind(1, uniqueKey);
-        testKeyQuery.bind(2, uniqueKey);
         
         bool result = false;
 
@@ -546,13 +560,13 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
 
         return result;
     } catch (const mapbox::sqlite::Exception& e) {
-        Log::Error(Event::Database, "SQLite error: " + std::string(e.what()));
+        Log::Error(Event::Database, "SQLite error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
         changePath(originalPath);
         encrypted = false;
         extensionLoaded = false;
         return false;
     } catch (const std::exception& e) {
-        Log::Error(Event::Database, "Error: " + std::string(e.what()));
+        Log::Error(Event::Database, "Error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
         changePath(originalPath);
         encrypted = false;
         extensionLoaded = false;
