@@ -552,6 +552,8 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
             }
         }
 
+        Log::Warning(Event::Database, "Result: " + std::to_string(result));
+
         Log::Warning(Event::Database, "Resetting path.");
 
         changePath(originalPath);
@@ -596,8 +598,8 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     // clang-format off
     mapbox::sqlite::Query createViewQuery { getStatement(
         "CREATE TEMP VIEW view_region_drm "
-        "AS SELECT decrypt(decrypt(key, hexdecode (?1), iv)) key, iv, region_id, signature, "
-        "digest (decrypt(decrypt(key, hexdecode (?2), iv))) chksum "
+        "AS SELECT decrypt(decrypt(key, hexdecode(?1), iv)) key, iv, region_id, signature, "
+        "digest (decrypt(decrypt(key, hexdecode(?2), iv))) chksum "
         "FROM drm "
         "JOIN region_drm ON drm_rowid = drm.rowid "
         "WHERE signature = chksum;"
