@@ -141,10 +141,6 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
 
     std::string callingArgments = "uniqueKey: " + uniqueKey + ", path: " + path + ", partnerKey: " + partnerKey;
     Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: " + callingArgments);
-    jobject callbackObj = jni::Unwrap(callback_);
-    jclass callbackClass = env_.GetObjectClass(callbackObj);
-    jmethodID callbackMethod = env_.GetMethodID(callbackClass, "onSuccess", "(Z)V");
-    Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callbackMethod: %p", callbackMethod);
 
     fileSource->testUniqueKeyForDecryption(uniqueKey, path, partnerKey, [
         callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback))
