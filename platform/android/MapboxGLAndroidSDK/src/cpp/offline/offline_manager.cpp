@@ -22,6 +22,29 @@ void handleException(std::exception_ptr exception,
         OfflineManager::FileSourceCallback::onSuccess(*env, callback);
     }
 }
+void handleTestUniqueKeyResult(bool result,
+                               const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback,
+                               android::UniqueEnv env = android::AttachEnv()) {
+    if (env == nullptr) {
+        Log::Error(mbgl::Event::General, "JNIEnv is null in handleTestUniqueKeyResult");
+        return;
+    }
+
+    try {
+        if (result) {
+            Log::Warning(mbgl::Event::General, "handleTestUniqueKeyResult: invoking onSuccess");
+            OfflineManager::TestUniqueKeyCallback::onSuccess(*env, callback, jni::jboolean(result));
+        } else {
+            Log::Warning(mbgl::Event::General, "handleTestUniqueKeyResult: invoking onError");
+            auto errorMsg = jni::Make<jni::String>(*env, "Test unique key failed.");
+            OfflineManager::TestUniqueKeyCallback::onError(*env, callback, errorMsg);
+        }
+    } catch (const std::exception& e) {
+        auto errorMsg = jni::Make<jni::String>(*env, e.what());
+        Log::Error(mbgl::Event::General, "Exception in handleTestUniqueKeyResult: %s", e.what());
+        OfflineManager::TestUniqueKeyCallback::onError(*env, callback, errorMsg);
+    }
+}
 } // namespace
 
 // OfflineManager //
@@ -145,19 +168,8 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_,
     fileSource->testUniqueKeyForDecryption(uniqueKey, path, partnerKey, [
         callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback))
     ](bool result) mutable {
-        android::UniqueEnv env = android::AttachEnv();
-
-        try {
-            Log::Warning(mbgl::Event::General, "Callback result: " + std::to_string(result));
-
-            jni::jboolean jResult = static_cast<jni::jboolean>(result);
-            Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: success");
-            TestUniqueKeyCallback::onSuccess(*env, *callback, jResult);
-        } catch (const std::exception& e) {
-            auto errorMsg = jni::Make<jni::String>(*env, e.what());
-            Log::Error(mbgl::Event::General, "OfflineManager::testUniqueKey: %s", e.what());
-            TestUniqueKeyCallback::onError(*env, *callback, errorMsg);
-        }
+        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback called with result: %d", result);
+        handleTestUniqueKeyResult(result, *callback);
     });
 }
 
