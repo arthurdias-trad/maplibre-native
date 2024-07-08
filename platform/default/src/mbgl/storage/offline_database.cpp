@@ -577,6 +577,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         loadEncryptorQuery.run();
 
         extensionLoaded = true;
+        Log::Warning(Event::Database, "Loaded extension.");
     }
 
     if (!keySet){
@@ -586,6 +587,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
         storedPartnerKey = partnerKey;
         keySet = true;
+        Log::Warning(Event::Database, "Key Set");
     }
 
     // clang-format off
@@ -596,6 +598,8 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         "FROM drm "
         "JOIN region_drm ON drm_rowid = drm.rowid "
         "WHERE signature = chksum;";
+
+    Log::Warning(Event::Database, "Create temp query string: " + queryString);
 
     mapbox::sqlite::Query createViewQuery { getStatement(queryString.c_str())};
     // clang-format on
@@ -623,6 +627,7 @@ void OfflineDatabase::dropTempView() {
 
 
 optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource::TileData& tile) {
+    Log::Warning(Event::Database, "getTile() called.");
     // Update accessed timestamp used for LRU eviction.
     if (!readOnly) {
         try {
@@ -721,6 +726,8 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
         //     "  AND z            = ?5 "));
     }
     // clang-format on
+
+    Log::Warning(Event::Database, "Query string: " + queryStr);
 
     mapbox::sqlite::Query query{getStatement(queryStr.c_str())};
 
