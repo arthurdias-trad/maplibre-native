@@ -590,7 +590,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     // clang-format off
     std::string queryString = 
-        "CREATE TEMP VIEW view_region_drm "
+        "CREATE TEMP VIEW view_region_drm AS "
         "SELECT decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv)) key, iv, region_id, signature, "
         "digest(decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv))) chksum "
         "FROM drm "
