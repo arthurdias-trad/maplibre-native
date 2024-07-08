@@ -164,6 +164,9 @@ private:
 
     bool encrypted = false;
     bool extensionLoaded = false;
+    bool keySet = false;
+    std::string storedPartnerKey;
+    std::string previousPath;
 
     class DatabaseSizeChangeStats {
     public:
