@@ -273,8 +273,8 @@ public class OfflineManager {
     }).start();
   }
 
-  public void testUniqueKeyOnDB(final String uniqueKey, final String path, final String partnerKey, final TestUniqueKeyCallback callback) {
-    Log.d(TAG, "testUniqueKeyOnDB: " + uniqueKey + " path: " + path + " partnerKey: " + partnerKey);
+  public void testUniqueKeyOnDB(@NonNull final String uniqueKey, @NonNull final String path, @NonNull final String partnerKey, @NonNull final TestUniqueKeyCallback callback) {
+    Log.d(TAG, "testUniqueKeyOnDB: " + uniqueKey + " path: " + path + " partnerKey: " + partnerKey + " callback: " + callback.toString());
     final File src = new File(path);
     new Thread(new Runnable() {
         @Override
@@ -629,9 +629,9 @@ public class OfflineManager {
     });
   }
 
-  private void testUniqueKeyForDecryption(final String uniqueKey, final String path, final String partnerKey, final TestUniqueKeyCallback callback) {
+  private void testUniqueKeyForDecryption(@NonNull final String uniqueKey, @NonNull final String path, @NonNull final String partnerKey, @NonNull final TestUniqueKeyCallback callback) {
     fileSource.activate();
-    testUniqueKey(uniqueKey, path, partnerKey, new TestUniqueKeyCallback() {
+    testUniqueKey(fileSource, uniqueKey, path, partnerKey, new TestUniqueKeyCallback() {
       @Override
       public void onSuccess(final boolean isValidKey) {
         handler.post(new Runnable() {
@@ -789,7 +789,7 @@ public class OfflineManager {
   private native void mergeOfflineRegions(FileSource fileSource, String path, MergeOfflineRegionsCallback callback);
 
   @Keep
-  private native void testUniqueKey(String uniqueKey, String path, String partnerKey, TestUniqueKeyCallback callback);
+  private native void testUniqueKey(FileSource fileSource, String uniqueKey, String path, String partnerKey, TestUniqueKeyCallback callback);
 
   @Keep
   private native void createTempViewForDecryption(String uniqueKey, String partnerKey, String path);

@@ -94,10 +94,15 @@ public:
         callback(db->updateMetadata(regionID, metadata));
     }
 
-    void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback) {
+    void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, const std::function<void(bool)>& callback) {
         Log::Warning(Event::Database, "DatabaseFileSourceThread::testUniqueKeyForDecryption called with these args: " + uniqueKey + ", " + path + ", " + partnerKey);
-        bool result = db->testUniqueKey(uniqueKey, path, partnerKey);
-        callback(result);
+
+        if (!callback) {
+            Log::Error(Event::Database, "DatabaseFileSourceThread::testUniqueKeyForDecryption callback is null");
+            return;
+        }
+
+        callback(db->testUniqueKey(uniqueKey, path, partnerKey));
     }
 
     void createTempViewForDecryption(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path) {
