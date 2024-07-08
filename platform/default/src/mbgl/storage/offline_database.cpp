@@ -497,11 +497,10 @@ bool isValidHex(const std::string& str) {
     return true;
 }
 
-bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
+expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
     Log::Warning(Event::Database, "Testing unique key with unique key: " + uniqueKey + " and path: " + path_);
 
     if (!isValidHex(uniqueKey)) {
-        Log::Error(Event::Database, "Invalid hex string: " + uniqueKey);
         return false;
     }
 
@@ -566,13 +565,13 @@ bool OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::str
         changePath(originalPath);
         encrypted = false;
         extensionLoaded = false;
-        return false;
+        return unexpected<std::exception_ptr>(std::current_exception());
     } catch (const std::exception& e) {
         Log::Error(Event::Database, "Error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
         changePath(originalPath);
         encrypted = false;
         extensionLoaded = false;
-        return false;
+        return unexpected<std::exception_ptr>(std::current_exception());;
     }
 }
 

@@ -44,7 +44,7 @@ public:
     void changePath(const std::string&);
     std::exception_ptr resetDatabase();
 
-    bool testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey);
+    expected<bool, std::exception_ptr> testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey);
 
     void createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_);
 

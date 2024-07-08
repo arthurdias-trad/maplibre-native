@@ -199,7 +199,7 @@ public:
     virtual void mergeOfflineRegions(const std::string& sideDatabasePath,
                                      std::function<void(expected<OfflineRegions, std::exception_ptr>)>);
 
-    virtual void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(bool)> callback);
+    virtual void testUniqueKeyForDecryption(const std::string& uniqueKey, const std::string& path, const std::string& partnerKey, std::function<void(expected<bool, std::exception_ptr>)> callback);
 
     virtual void createTempViewForDecryption(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path);
 

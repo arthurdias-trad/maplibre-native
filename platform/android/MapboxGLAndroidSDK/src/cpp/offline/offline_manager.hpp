@@ -69,7 +69,7 @@ public:
                                 const jni::Object<OfflineManager::TestUniqueKeyCallback>&,
                                 const jni::jboolean);
 
-        static void onError(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, const jni::String&);
+        static void onError(jni::JNIEnv&, const jni::Object<OfflineManager::TestUniqueKeyCallback>&, std::exception_ptr);
     };
 
     static constexpr auto Name() { return "com/mapbox/mapboxsdk/offline/OfflineManager"; };
