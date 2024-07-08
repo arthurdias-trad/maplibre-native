@@ -122,6 +122,7 @@ private:
     void checkFlags();
 
     mapbox::sqlite::Statement& getStatement(const char *);
+    mapbox::sqlite::Statement getStatement(const char *, mapbox::sqlite::Database& database);
 
     optional<std::pair<Response, uint64_t>> getTile(const Resource::TileData&);
     optional<int64_t> hasTile(const Resource::TileData&);

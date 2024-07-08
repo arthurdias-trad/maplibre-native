@@ -504,26 +504,20 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
         return false;
     }
 
-    std::string originalPath = this->path;
-    changePath(path_);
+    try {
+        auto testDb = std::make_unique<mapbox::sqlite::Database>(mapbox::sqlite::Database::open(path_, mapbox::sqlite::ReadWriteCreate));
+        testDb->setBusyTimeout(Milliseconds::max());
+        testDb->exec("PRAGMA foreign_keys = ON");
 
-    encrypted = true;
-
-    if (!extensionLoaded) {
-        Log::Warning(Event::Database, "Loading extension.");
-        mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
+        auto loadEncryptorStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, "SELECT load_extension('mbtileencryptor.so')");
+        mapbox::sqlite::Query loadEncryptorQuery{*loadEncryptorStmt};
         loadEncryptorQuery.run();
 
-        extensionLoaded = true;
-    }
+        auto setKeyStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, "SELECT setkey(?)");
+        mapbox::sqlite::Query setKeyQuery{*setKeyStmt};
+        setKeyQuery.bind(1, partnerKey);
+        setKeyQuery.run();
 
-
-    Log::Warning(Event::Database, "Setting key.");
-    mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
-    setKeyQuery.bind(1, partnerKey);
-    setKeyQuery.run();
-
-    try {
         Log::Warning(Event::Database, "Creating test key query.");
         // clang-format off
         std::string queryString = 
@@ -533,9 +527,9 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
             "JOIN region_drm ON drm_rowid = drm.rowid "
             "WHERE signature = chksum;";
         Log::Warning(Event::Database, "Query string: " + queryString);
-        mapbox::sqlite::Query testKeyQuery{ getStatement(
-            queryString.c_str()
-        )};
+        
+        auto testKeyStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, queryString);
+        mapbox::sqlite::Query testKeyQuery{ *testKeyStmt };
         // clang-format on
         
         bool result = false;
@@ -555,22 +549,14 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
 
         Log::Warning(Event::Database, "Resetting path.");
 
-        changePath(originalPath);
-        encrypted = false;
-        extensionLoaded = false;
-
         return result;
     } catch (const mapbox::sqlite::Exception& e) {
         Log::Error(Event::Database, "SQLite error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
-        changePath(originalPath);
-        encrypted = false;
-        extensionLoaded = false;
+
         return unexpected<std::exception_ptr>(std::current_exception());
     } catch (const std::exception& e) {
         Log::Error(Event::Database, "Error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
-        changePath(originalPath);
-        encrypted = false;
-        extensionLoaded = false;
+
         return unexpected<std::exception_ptr>(std::current_exception());;
     }
 }

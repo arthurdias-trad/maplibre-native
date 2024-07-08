@@ -134,6 +134,12 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
                                     const jni::String& partnerKey_, 
                                     const jni::Object<TestUniqueKeyCallback>& callback_) {
     Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey called");
+
+    if (!callback_) {
+        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback is null");
+        return;
+    }
+
     auto globalCallback = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, callback_);
     auto globalFilesource = jni::NewGlobal<jni::EnvAttachingDeleter>(env_, jFileSource_);
     std::string uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
@@ -149,11 +155,19 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
     ](expected<bool, std::exception_ptr> result) mutable {
         android::UniqueEnv env = android::AttachEnv();
         Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback called with result: %d", result);
-        if (result.has_value()) {
-            OfflineManager::TestUniqueKeyCallback::onSuccess(*env, *jFileSource, *callback, result.value());
-        } else {
+        try {
+            if (result.has_value()) {
+                Log::Warning(mbgl::Event::General, "Result is valid");
+                OfflineManager::TestUniqueKeyCallback::onSuccess(*env, *jFileSource, *callback, result.value());
+            } else {
+                Log::Warning(mbgl::Event::General, "Result is error");
+                OfflineManager::TestUniqueKeyCallback::onError(
+                    *env, *callback, jni::Make<jni::String>(*env, mbgl::util::toString(result.error())));
+            }
+        } catch (const std::exception& e) {
+            Log::Error(mbgl::Event::General, "Exception in callback: %s", e.what());
             OfflineManager::TestUniqueKeyCallback::onError(
-                *env, *callback, result.error());
+                *env, *callback, jni::Make<jni::String>(*env, e.what()));
         }
     });
 }
