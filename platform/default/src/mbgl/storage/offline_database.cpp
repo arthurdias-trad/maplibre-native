@@ -759,12 +759,14 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
 
     optional<std::string> data = query.get<optional<std::string>>(4);
     if (!data) {
+        Log::Warning(Event::Database, "No content");
         response.noContent = true;
     } else if (query.get<bool>(5)) {
-        Log::Warning(Event::Database, "Decompressing data, compressed: " + std::to_string(query.get<bool>(5)));
+        Log::Warning(Event::Database, "Data size: " + data->length() + ", compressed: " + std::to_string(query.get<bool>(5)));
         response.data = std::make_shared<std::string>(util::decompress(*data));
         size = data->length();
     } else {
+        Log::Warning(Event::Database, "Data size: " + data->length() + ", compressed: " + std::to_string(query.get<bool>(5)));
         response.data = std::make_shared<std::string>(*data);
         size = data->length();
     }
