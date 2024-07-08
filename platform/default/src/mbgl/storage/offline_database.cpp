@@ -568,6 +568,8 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     changePath(path_);
 
+    Log::Warning(Event::Database, "Path changed to: " + path_);
+
     assert(db);
 
     encrypted = true;
@@ -753,6 +755,7 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
     if (!data) {
         response.noContent = true;
     } else if (query.get<bool>(5)) {
+        Log::Warning(Event::Database, "Decompressing data, compressed: " + std::to_string(query.get<bool>(5)));
         response.data = std::make_shared<std::string>(util::decompress(*data));
         size = data->length();
     } else {
