@@ -528,7 +528,7 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
             "WHERE signature = chksum;";
         Log::Warning(Event::Database, "Query string: " + queryString);
         
-        auto testKeyStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, queryString);
+        auto testKeyStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, queryString.c_str());
         mapbox::sqlite::Query testKeyQuery{ *testKeyStmt };
         // clang-format on
         
