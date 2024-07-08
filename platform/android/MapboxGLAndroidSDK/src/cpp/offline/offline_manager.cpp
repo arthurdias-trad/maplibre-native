@@ -154,7 +154,7 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
         jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource))
     ](expected<bool, std::exception_ptr> result) mutable {
         android::UniqueEnv env = android::AttachEnv();
-        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback called with result: %d", result);
+        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback called with result");
         try {
             if (result.has_value()) {
                 Log::Warning(mbgl::Event::General, "Result is valid");
@@ -162,12 +162,12 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
             } else {
                 Log::Warning(mbgl::Event::General, "Result is error");
                 OfflineManager::TestUniqueKeyCallback::onError(
-                    *env, *callback, jni::Make<jni::String>(*env, mbgl::util::toString(result.error())));
+                    *env, *callback, result.error());
             }
         } catch (const std::exception& e) {
             Log::Error(mbgl::Event::General, "Exception in callback: %s", e.what());
             OfflineManager::TestUniqueKeyCallback::onError(
-                *env, *callback, jni::Make<jni::String>(*env, e.what()));
+                *env, *callback, std::current_exception());
         }
     });
 }
