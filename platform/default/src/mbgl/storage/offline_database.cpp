@@ -574,7 +574,10 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     encrypted = true;
 
+    Log::Warning(Event::Database, "Is extension loaded: " + std::to_string(extensionLoaded));
+
     if (!extensionLoaded) {
+        Log::Warning(Event::Database, "Loading extension.");
         mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
         loadEncryptorQuery.run();
 
@@ -582,7 +585,10 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         Log::Warning(Event::Database, "Loaded extension.");
     }
 
+    Log::Warning(Event::Database, "Is key set: " + std::to_string(keySet));
+
     if (!keySet){
+        Log::Warning(Event::Database, "Setting key.");
         mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
         setKeyQuery.bind(1, partnerKey); 
         setKeyQuery.run();
