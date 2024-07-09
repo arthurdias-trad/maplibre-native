@@ -154,6 +154,12 @@ void OfflineDatabase::removeExisting() {
     statements.clear();
     db.reset();
 
+    // Check if path ends with RMC file extension, if so, do not delete.
+    if (path.size() >= 4 && path.substr(path.size() - 4) == ".rmc") {
+        Log::Warning(Event::Database, "Path ends with .rmc, not deleting");
+        return;
+    }
+
     util::deleteFile(path);
 }
 
@@ -566,9 +572,11 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     previousPath = path;
 
-    changePath(path_);
+    if (path_ != path) {    
+        changePath(path_);
 
-    Log::Warning(Event::Database, "Path changed to: " + path_);
+        Log::Warning(Event::Database, "Path changed to: " + path_);
+    }
 
     assert(db);
 
@@ -587,13 +595,14 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     Log::Warning(Event::Database, "Is key set: " + std::to_string(keySet));
 
+    storedPartnerKey = partnerKey;
+
     if (!keySet){
         Log::Warning(Event::Database, "Setting key.");
         mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
         setKeyQuery.bind(1, partnerKey); 
         setKeyQuery.run();
 
-        storedPartnerKey = partnerKey;
         keySet = true;
         Log::Warning(Event::Database, "Key Set");
     }
@@ -627,10 +636,9 @@ void OfflineDatabase::dropTempView() {
 
     dropViewQuery.run();
 
-    encrypted = false;
-    extensionLoaded = false;
-    storedPartnerKey = "";
-    changePath(previousPath);
+    // encrypted = false;
+    // extensionLoaded = false;
+    storedPartnerKey.clear();
 }
 
 
@@ -671,6 +679,13 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
 
     // clang-format off
     if (encrypted) {
+        
+        if (storedPartnerKey.empty()) {
+            Response earlyResponse;
+            earlyResponse.noContent = true;
+            return std::make_pair(earlyResponse, 0);
+        }
+
         // Ensure mbtileencryptor is loaded
         if (!extensionLoaded) {
             mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
