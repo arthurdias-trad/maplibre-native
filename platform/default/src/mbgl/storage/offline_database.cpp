@@ -683,7 +683,7 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
         if (storedPartnerKey.empty()) {
             Response earlyResponse;
             earlyResponse.noContent = true;
-            return std::make_pair(earlyResponse, 0);
+            return std::make_pair(earlyResponse, (uint64_t) 0);
         }
 
         // Ensure mbtileencryptor is loaded
