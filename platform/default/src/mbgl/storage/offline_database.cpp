@@ -598,6 +598,28 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     // clang-format on
 
     createViewQuery.run();
+
+    // clang-format off
+    mapbox::sqlite::Query createDecryptedTilesTempViewQuery { getStatement(
+        "CREATE TEMP VIEW decrypted_tiles AS "
+        "SELECT "
+        "tiles.id, "
+        "tiles.url_template, "
+        "tiles.pixel_ratio, "
+        "tiles.z, "
+        "tiles.x, "
+        "tiles.y, "
+        "tiles.expires, "
+        "tiles.modified, "
+        "tiles.etag, "
+        "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data "
+        "FROM tiles "
+        "JOIN region_tiles ON tiles.id = region_tiles.tile_id "
+        "JOIN view_region_drm USING(region_id);"
+    )};
+    // clang-format on
+
+    createDecryptedTilesTempViewQuery.run();
 }
 
 void OfflineDatabase::dropTempView() {
@@ -610,6 +632,13 @@ void OfflineDatabase::dropTempView() {
     // clang-format on
 
     dropViewQuery.run();
+
+    // clang-format off
+    mapbox::sqlite::Query dropDecryptedTilesTempViewQuery { getStatement(
+        "DROP VIEW IF EXISTS decrypted_tiles;"
+    )};
+
+    dropDecryptedTilesTempViewQuery.run();
 
     // encrypted = false;
     // extensionLoaded = false;
@@ -677,12 +706,8 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
         }
 
         queryStr = 
-            "SELECT etag, expires, must_revalidate, modified, "
-            "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data, "
-            "compressed "
-            "FROM tiles "
-            "JOIN region_tiles ON tiles.id = region_tiles.tile_id "
-            "JOIN view_region_drm USING(region_id) "
+            "SELECT etag, expires, must_revalidate, modified, data, compressed "
+            "FROM decrypted_tiles "
             "WHERE url_template = ?1 "
             "  AND pixel_ratio  = ?2 "
             "  AND x            = ?3 "
