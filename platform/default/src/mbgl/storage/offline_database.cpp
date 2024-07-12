@@ -612,7 +612,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         "tiles.expires, "
         "tiles.modified, "
         "tiles.etag, "
-        "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data "
+        "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data, "
         "tiles.compressed, "
         "tiles.accessed, "
         "tiles.must_revalidate "
