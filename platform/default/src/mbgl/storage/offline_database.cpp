@@ -613,6 +613,9 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         "tiles.modified, "
         "tiles.etag, "
         "decrypt(tiles.data, view_region_drm.key, view_region_drm.iv) AS data "
+        "tiles.compressed, "
+        "tiles.accessed, "
+        "tiles.must_revalidate "
         "FROM tiles "
         "JOIN region_tiles ON tiles.id = region_tiles.tile_id "
         "JOIN view_region_drm USING(region_id);"
@@ -778,6 +781,10 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
     } else {
         response.data = std::make_shared<std::string>(*data);
         size = data->length();
+    }
+
+    if (encrypted) {
+        Log::Warning(Event::Database, "Response columns: etag: " + response.etag.value_or("null") + ", expires: " + response.expires.value_or("null") + ", mustRevalidate: " + std::to_string(response.mustRevalidate) + ", modified: " + response.modified.value_or("null") + ", data size: " + size + ", compressed: " + std::to_string(query.get<bool>(5)));
     }
 
     return std::make_pair(response, size);
