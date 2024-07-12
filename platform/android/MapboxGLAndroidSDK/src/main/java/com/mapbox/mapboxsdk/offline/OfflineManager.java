@@ -283,7 +283,7 @@ public class OfflineManager {
     }).start();
   }
 
-  public void setNewTestDbPath(@NonNull final String) {
+  public void setNewTestDbPath(@NonNull final String path) {
     new Thread(new Runnable() {
         @Override
         public void run() {
