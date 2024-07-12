@@ -274,12 +274,20 @@ public class OfflineManager {
   }
 
   public void testUniqueKeyOnDB(@NonNull final String uniqueKey, @NonNull final String path, @NonNull final String partnerKey, @NonNull final TestUniqueKeyCallback callback) {
-    Log.d(TAG, "testUniqueKeyOnDB: " + uniqueKey + " path: " + path + " partnerKey: " + partnerKey + " callback: " + callback.toString());
     final File src = new File(path);
     new Thread(new Runnable() {
         @Override
         public void run() {
             testUniqueKeyForDecryption(uniqueKey, src.getAbsolutePath(), partnerKey, callback);
+        }
+    }).start();
+  }
+
+  public void setNewTestDbPath(@NonNull final String) {
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            setTestDbPath(path);
         }
     }).start();
   }
@@ -790,6 +798,9 @@ public class OfflineManager {
 
   @Keep
   private native void testUniqueKey(FileSource fileSource, String uniqueKey, String path, String partnerKey, TestUniqueKeyCallback callback);
+
+  @Keep
+  private native void setTestDbPath(String path);
 
   @Keep
   private native void createTempViewForDecryption(String uniqueKey, String partnerKey, String path);

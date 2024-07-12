@@ -154,13 +154,10 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
         jFileSource = std::make_shared<decltype(globalFilesource)>(std::move(globalFilesource))
     ](expected<bool, std::exception_ptr> result) mutable {
         android::UniqueEnv env = android::AttachEnv();
-        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback called with result");
         try {
             if (result.has_value()) {
-                Log::Warning(mbgl::Event::General, "Result is valid");
                 OfflineManager::TestUniqueKeyCallback::onSuccess(*env, *jFileSource, *callback, result.value());
             } else {
-                Log::Warning(mbgl::Event::General, "Result is error");
                 OfflineManager::TestUniqueKeyCallback::onError(
                     *env, *callback, result.error());
             }
@@ -170,6 +167,12 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
                 *env, *callback, std::current_exception());
         }
     });
+}
+
+void OfflineManager::setTestDbPath(jni::JNIEnv& env_, const jni::String& path_) {
+    fileSource->setDatabasePath(
+        jni::Make<std::string>(env_, path_), 
+        []() {});
 }
 
 void OfflineManager::createTempViewForDecryption(jni::JNIEnv& env_, const jni::String& uniqueKey_, const jni::String& partnerKey_, const jni::String& path_) {
@@ -286,7 +289,8 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
         METHOD(&OfflineManager::putResourceWithUrl, "putResourceWithUrl"),
         METHOD(&OfflineManager::testUniqueKey, "testUniqueKey"),
         METHOD(&OfflineManager::createTempViewForDecryption, "createTempViewForDecryption"),
-        METHOD(&OfflineManager::dropTempView, "dropTempView")
+        METHOD(&OfflineManager::dropTempView, "dropTempView"),
+        METHOD(&OfflineManager::setTestDbPath, "setTestDbPath")
         );
 }
 

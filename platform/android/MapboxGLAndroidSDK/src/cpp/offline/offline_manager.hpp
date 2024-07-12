@@ -101,6 +101,8 @@ public:
                         const jni::String& partnerKey,
                         const jni::Object<TestUniqueKeyCallback>& callback_);
 
+    void setTestDbPath(jni::JNIEnv&, const jni::String& path_);
+
     void createTempViewForDecryption(jni::JNIEnv&,
                                      const jni::String& uniqueKey,
                                      const jni::String& partnerKey,
