@@ -76,7 +76,6 @@ void OfflineDatabase::initialize() {
 }
 
 void OfflineDatabase::changePath(const std::string& path_) {
-    Log::Warning(Event::Database, "Changing the database path to: " + path_);
     Log::Info(Event::Database, "Changing the database path.");
     cleanup();
     path = path_;
@@ -504,8 +503,6 @@ bool isValidHex(const std::string& str) {
 }
 
 expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::string& uniqueKey, const std::string& path_, const std::string partnerKey) {
-    Log::Warning(Event::Database, "Testing unique key with unique key: " + uniqueKey + " and path: " + path_);
-
     if (!isValidHex(uniqueKey)) {
         return false;
     }
@@ -524,7 +521,6 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
         setKeyQuery.bind(1, partnerKey);
         setKeyQuery.run();
 
-        Log::Warning(Event::Database, "Creating test key query.");
         // clang-format off
         std::string queryString = 
             "SELECT decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv)) key, iv, region_id, signature, "
@@ -532,7 +528,6 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
             "FROM drm "
             "JOIN region_drm ON drm_rowid = drm.rowid "
             "WHERE signature = chksum;";
-        Log::Warning(Event::Database, "Query string: " + queryString);
         
         auto testKeyStmt = std::make_unique<mapbox::sqlite::Statement>(*testDb, queryString.c_str());
         mapbox::sqlite::Query testKeyQuery{ *testKeyStmt };
@@ -540,7 +535,6 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
         
         bool result = false;
 
-        Log::Warning(Event::Database, "Running test key query.");
         while (testKeyQuery.run()) {
             std::string signature = testKeyQuery.get<std::string>(3);
             std::string checksum = testKeyQuery.get<std::string>(4);
@@ -550,10 +544,6 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
                 break;
             }
         }
-
-        Log::Warning(Event::Database, "Result: " + std::to_string(result));
-
-        Log::Warning(Event::Database, "Resetting path.");
 
         return result;
     } catch (const mapbox::sqlite::Exception& e) {
@@ -568,43 +558,31 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
 }
 
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
-    Log::Warning(Event::Database, "Creating temp view.");
-
     previousPath = path;
 
     if (path_ != path) {    
         changePath(path_);
-
-        Log::Warning(Event::Database, "Path changed to: " + path_);
     }
 
     assert(db);
 
     encrypted = true;
 
-    Log::Warning(Event::Database, "Is extension loaded: " + std::to_string(extensionLoaded));
-
     if (!extensionLoaded) {
-        Log::Warning(Event::Database, "Loading extension.");
         mapbox::sqlite::Query loadEncryptorQuery{getStatement("SELECT load_extension('mbtileencryptor.so')")};
         loadEncryptorQuery.run();
 
         extensionLoaded = true;
-        Log::Warning(Event::Database, "Loaded extension.");
     }
-
-    Log::Warning(Event::Database, "Is key set: " + std::to_string(keySet));
 
     storedPartnerKey = partnerKey;
 
     if (!keySet){
-        Log::Warning(Event::Database, "Setting key.");
         mapbox::sqlite::Query setKeyQuery{getStatement("SELECT setkey(?)")};
         setKeyQuery.bind(1, partnerKey); 
         setKeyQuery.run();
 
         keySet = true;
-        Log::Warning(Event::Database, "Key Set");
     }
 
     // clang-format off
@@ -616,8 +594,6 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         "JOIN region_drm ON drm_rowid = drm.rowid "
         "WHERE signature = chksum;";
 
-    Log::Warning(Event::Database, "Create temp query string: " + queryString);
-
     mapbox::sqlite::Query createViewQuery { getStatement(queryString.c_str())};
     // clang-format on
 
@@ -625,7 +601,6 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 }
 
 void OfflineDatabase::dropTempView() {
-    Log::Warning(Event::Database, "Dropping temp view.");
     assert(db);
 
     // clang-format off
@@ -643,7 +618,6 @@ void OfflineDatabase::dropTempView() {
 
 
 optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource::TileData& tile) {
-    Log::Warning(Event::Database, "getTile() called.");
     // Update accessed timestamp used for LRU eviction.
     if (!readOnly) {
         try {
@@ -750,8 +724,6 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
     }
     // clang-format on
 
-    Log::Warning(Event::Database, "Query string: " + queryStr);
-
     mapbox::sqlite::Query query{getStatement(queryStr.c_str())};
 
     query.bind(1, tile.urlTemplate);
@@ -774,14 +746,11 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
 
     optional<std::string> data = query.get<optional<std::string>>(4);
     if (!data) {
-        Log::Warning(Event::Database, "No content");
         response.noContent = true;
     } else if (query.get<bool>(5)) {
-        Log::Warning(Event::Database, "Data size: " + std::to_string(data->length()) + ", compressed: " + std::to_string(query.get<bool>(5)));
         response.data = std::make_shared<std::string>(util::decompress(*data));
         size = data->length();
     } else {
-        Log::Warning(Event::Database, "Data size: " + std::to_string(data->length()) + ", compressed: " + std::to_string(query.get<bool>(5)));
         response.data = std::make_shared<std::string>(*data);
         size = data->length();
     }
