@@ -783,8 +783,8 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
         size = data->length();
     }
 
-    if (encrypted) {
-        Log::Warning(Event::Database, "Response columns: etag: " + response.etag.value_or("null") + ", expires: " + response.expires.value_or("null") + ", mustRevalidate: " + std::to_string(response.mustRevalidate) + ", modified: " + response.modified.value_or("null") + ", data size: " + size + ", compressed: " + std::to_string(query.get<bool>(5)));
+    if (encrypted && data) {
+        Log::Warning(Event::Database, "Response columns: etag: " << response.etag << ", expires: " << response.expires << ", mustRevalidate: " << std::to_string(response.mustRevalidate) << ", modified: " << response.modified << ", data size: " << size << ", compressed: " << std::to_string(query.get<bool>(5)));
     }
 
     return std::make_pair(response, size);
