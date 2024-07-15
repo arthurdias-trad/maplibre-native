@@ -642,11 +642,15 @@ void OfflineDatabase::testDecryptionViewData(const std::string& filePath) {
         std::string data = testDecryptionViewDataQuery.get<std::string>(0);
         bool compressed = testDecryptionViewDataQuery.get<bool>(1);
 
-        util::write_file(filePath, data);
+        try {
+            util::write_file(filePath + "tile_data", data);
 
-        if (compressed) {
-            data = util::decompress(data);
-            util::write_file(filePath + ".decompressed", data);
+            if (compressed) {
+                data = util::decompress(data);
+                util::write_file(filePath + "tile_data.decompressed", data);
+            }
+        } catch (const std::exception& e) {
+            Log::Error(Event::Database, "Error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
         }
     }
 }
