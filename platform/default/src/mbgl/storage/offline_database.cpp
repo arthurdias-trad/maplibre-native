@@ -628,8 +628,12 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     OfflineDatabase::testDecryptionViewData(basePath + "/");
 }
 
-void OfflineDatabase::testDecryptionViewData(const std::string& filePath) {
+void OfflineDatabase::testDecryptionViewData(const std::string& dirPath) {
     assert(db);
+
+    std::string fileName = dirPath + "decrypted_tile_data";
+
+    Log::Warning(Event::Database, "Testing decryption view data, saving file to: " + fileName);
 
     // clang-format off
     mapbox::sqlite::Query testDecryptionViewDataQuery { getStatement(
@@ -643,11 +647,11 @@ void OfflineDatabase::testDecryptionViewData(const std::string& filePath) {
         bool compressed = testDecryptionViewDataQuery.get<bool>(1);
 
         try {
-            util::write_file(filePath + "tile_data", data);
+            util::write_file(fileName, data);
 
             if (compressed) {
                 data = util::decompress(data);
-                util::write_file(filePath + "tile_data.decompressed", data);
+                util::write_file(fileName + ".decompressed", data);
             }
         } catch (const std::exception& e) {
             Log::Error(Event::Database, "Error: " + std::string(e.what()) + ". Line: " + std::to_string(__LINE__));
