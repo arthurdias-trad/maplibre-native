@@ -561,7 +561,7 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
     previousPath = path;
 
-    Log::Warning(Event::Database, "Creating temporary view for decryption using this path: ", path_);
+    Log::Warning(Event::Database, "Creating temporary view for decryption using this path: " + path_);
 
     if (path_ != path) {    
         changePath(path_);
