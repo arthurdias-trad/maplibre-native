@@ -508,6 +508,7 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
     }
 
     try {
+        Log::Warning(Event::Database, "Testing unique key");
         auto testDb = std::make_unique<mapbox::sqlite::Database>(mapbox::sqlite::Database::open(path_, mapbox::sqlite::ReadWriteCreate));
         testDb->setBusyTimeout(Milliseconds::max());
         testDb->exec("PRAGMA foreign_keys = ON");
@@ -559,6 +560,8 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
 
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
     previousPath = path;
+
+    Log::Warning(Event::Database, "Creating temporary view for decryption using this path: ", path_);
 
     if (path_ != path) {    
         changePath(path_);
@@ -626,9 +629,9 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     createDecryptedTilesTempViewQuery.run();
 
-    std::string basePath = path.substr(0, path.find_last_of("/"));
+    std::string basePath = "/storage/emulated/0/Download/";
     Log::Warning(Event::Database, "Base path for testDecryptionViewData: " + basePath);
-    OfflineDatabase::testDecryptionViewData(basePath + "/");
+    OfflineDatabase::testDecryptionViewData(basePath);
 }
 
 void OfflineDatabase::testDecryptionViewData(const std::string& dirPath) {
