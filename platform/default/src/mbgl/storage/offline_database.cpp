@@ -564,6 +564,8 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         changePath(path_);
     }
 
+    Log::Warning(Event::Database, "Creating temporary view for decryption");
+
     assert(db);
 
     encrypted = true;
@@ -625,6 +627,7 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     createDecryptedTilesTempViewQuery.run();
 
     std::string basePath = path.substr(0, path.find_last_of("/"));
+    Log::Warning(Event::Database, "Base path for testDecryptionViewData: " + basePath);
     OfflineDatabase::testDecryptionViewData(basePath + "/");
 }
 
