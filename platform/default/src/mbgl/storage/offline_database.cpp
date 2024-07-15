@@ -665,6 +665,7 @@ void OfflineDatabase::testDecryptionViewData(const std::string& dirPath) {
     mapbox::sqlite::Query testDecryptionViewDataQuery { getStatement(
         "SELECT decrypt(tiles, key, iv) AS data, compressed "
         "FROM tiles "
+        "JOIN region_tiles ON tiles.id = region_tiles.tile_id"
         "JOIN view_region_drm USING(region_id) "
         "WHERE id = 300;"
     )};
