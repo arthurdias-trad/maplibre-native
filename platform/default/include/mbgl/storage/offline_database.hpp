@@ -50,6 +50,8 @@ public:
 
     void dropTempView();
 
+    void testDecryptionViewData(const std::string&);
+
     optional<Response> get(const Resource&);
 
     // Return value is (inserted, stored size)

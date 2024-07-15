@@ -623,6 +623,32 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
     // clang-format on
 
     createDecryptedTilesTempViewQuery.run();
+
+    std::string basePath = path.substr(0, path.find_last_of("/"));
+    OfflineDatabase::testDecryptionViewData(basePath + "/");
+}
+
+void OfflineDatabase::testDecryptionViewData(const std::string& filePath) {
+    assert(db);
+
+    // clang-format off
+    mapbox::sqlite::Query testDecryptionViewDataQuery { getStatement(
+        "SELECT data, compressed FROM decrypted_tiles WHERE id = 300;"
+    )};
+    // clang-format on
+
+    // Save decrypted data as binary file to path
+    if (testDecryptionViewDataQuery.run()) {
+        std::string data = testDecryptionViewDataQuery.get<std::string>(0);
+        bool compressed = testDecryptionViewDataQuery.get<bool>(1);
+
+        util::write_file(filePath, data);
+
+        if (compressed) {
+            data = util::decompress(data);
+            util::write_file(filePath + ".decompressed", data);
+        }
+    }
 }
 
 void OfflineDatabase::dropTempView() {
