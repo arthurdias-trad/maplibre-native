@@ -133,10 +133,9 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
                                     const jni::String& path_, 
                                     const jni::String& partnerKey_, 
                                     const jni::Object<TestUniqueKeyCallback>& callback_) {
-    Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey called");
 
     if (!callback_) {
-        Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: callback is null");
+        Log::Error(mbgl::Event::General, "OfflineManager::testUniqueKey: callback is null");
         return;
     }
 
@@ -145,9 +144,6 @@ void OfflineManager::testUniqueKey(jni::JNIEnv& env_, const jni::Object<FileSour
     std::string uniqueKey = jni::Make<std::string>(env_, uniqueKey_);
     std::string path = jni::Make<std::string>(env_, path_);
     std::string partnerKey = jni::Make<std::string>(env_, partnerKey_);
-
-    std::string callingArgments = "uniqueKey: " + uniqueKey + ", path: " + path + ", partnerKey: " + partnerKey;
-    Log::Warning(mbgl::Event::General, "OfflineManager::testUniqueKey: " + callingArgments);
 
     fileSource->testUniqueKeyForDecryption(uniqueKey, path, partnerKey, [
         callback = std::make_shared<decltype(globalCallback)>(std::move(globalCallback)),
@@ -299,7 +295,6 @@ void OfflineManager::registerNative(jni::JNIEnv& env) {
 void OfflineManager::TestUniqueKeyCallback::onError(jni::JNIEnv& env,
                                                      const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback,
                                                      std::exception_ptr error) {
-    Log::Warning(mbgl::Event::General, "OfflineManager::TestUniqueKeyCallback::onError called");
     static auto& javaClass = jni::Class<OfflineManager::TestUniqueKeyCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void (jni::String)>(env, "onError");
 
@@ -310,7 +305,6 @@ void OfflineManager::TestUniqueKeyCallback::onSuccess(jni::JNIEnv& env,
                                                         const jni::Object<FileSource>& jFileSource,
                                                         const jni::Object<OfflineManager::TestUniqueKeyCallback>& callback,
                                                         const jni::jboolean result) {
-    Log::Warning(mbgl::Event::General, "OfflineManager::TestUniqueKeyCallback::onSuccess called");
     static auto& javaClass = jni::Class<OfflineManager::TestUniqueKeyCallback>::Singleton(env);
     static auto method = javaClass.GetMethod<void (jni::jboolean)>(env, "onSuccess");
 

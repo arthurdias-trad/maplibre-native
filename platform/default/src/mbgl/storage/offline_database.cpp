@@ -508,7 +508,6 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
     }
 
     try {
-        Log::Warning(Event::Database, "Testing unique key");
         auto testDb = std::make_unique<mapbox::sqlite::Database>(mapbox::sqlite::Database::open(path_, mapbox::sqlite::ReadWriteCreate));
         testDb->setBusyTimeout(Milliseconds::max());
         testDb->exec("PRAGMA foreign_keys = ON");
@@ -561,13 +560,9 @@ expected<bool, std::exception_ptr> OfflineDatabase::testUniqueKey(const std::str
 void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::string& partnerKey, const std::string& path_) { 
     previousPath = path;
 
-    Log::Warning(Event::Database, "Creating temporary view for decryption using this path: " + path_);
-
     if (path_ != path) {    
         changePath(path_);
     }
-
-    Log::Warning(Event::Database, "Creating temporary view for decryption");
 
     assert(db);
 
@@ -588,26 +583,6 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
         setKeyQuery.run();
 
         keySet = true;
-    }
-
-    // clang-format off
-    std::string selectQueryString = 
-    "SELECT decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv)) key, iv, region_id, signature, "
-        "digest(decrypt(decrypt(key, hexdecode('" + uniqueKey + "'), iv))) chksum "
-        "FROM drm "
-        "JOIN region_drm ON drm_rowid = drm.rowid "
-        "WHERE signature = chksum;";
-
-    mapbox::sqlite::Query selectQuery { getStatement(selectQueryString.c_str())};
-
-    while (selectQuery.run()) {
-        std::string key = selectQuery.get<std::string>(0);
-        std::string iv = selectQuery.get<std::string>(1);
-        int regionId = selectQuery.get<int>(2);
-        std::string signature = selectQuery.get<std::string>(3);
-        std::string checksum = selectQuery.get<std::string>(4);
-
-        Log::Warning(Event::Database, "Key: " + key + ", IV: " + iv + ", Region ID: " + std::to_string(regionId) + ", Signature: " + signature + ", Checksum: " + checksum);
     }
 
     // clang-format off
@@ -649,9 +624,9 @@ void OfflineDatabase::createTempView(const std::string& uniqueKey, const std::st
 
     // createDecryptedTilesTempViewQuery.run();
 
-    std::string basePath = "/storage/emulated/0/Download/";
-    Log::Warning(Event::Database, "Base path for testDecryptionViewData: " + basePath);
-    OfflineDatabase::testDecryptionViewData(basePath);
+    // std::string basePath = "/storage/emulated/0/Download/";
+    // Log::Warning(Event::Database, "Base path for testDecryptionViewData: " + basePath);
+    // OfflineDatabase::testDecryptionViewData(basePath);
 }
 
 void OfflineDatabase::testDecryptionViewData(const std::string& dirPath) {
@@ -856,10 +831,6 @@ optional<std::pair<Response, uint64_t>> OfflineDatabase::getTile(const Resource:
     } else {
         response.data = std::make_shared<std::string>(*data);
         size = data->length();
-    }
-
-    if (encrypted && data) {
-        Log::Warning(Event::Database, "Response columns: etag: " + response.etag.value_or("") + ", expires: " + (response.expires ? std::to_string(std::chrono::duration_cast<std::chrono::seconds>(response.expires->time_since_epoch()).count()) : "null") + ", mustRevalidate: " + std::to_string(response.mustRevalidate) + ", modified: " + (response.modified ? std::to_string(std::chrono::duration_cast<std::chrono::seconds>(response.modified->time_since_epoch()).count()) : "null") + ", data size: " + std::to_string(size) + ", compressed: " + std::to_string(query.get<bool>(5)));
     }
 
     return std::make_pair(response, size);
